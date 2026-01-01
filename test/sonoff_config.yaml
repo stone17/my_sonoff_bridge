@@ -1,0 +1,5 @@
+devices:
+  office_plug:
+    ip: "IP_OF_DEVICE"         # Keep your known IP
+    id: "DEVICE_ID"            # From JSON 'deviceid'
+    key: "DEVICE_KEY"          # From JSON 'devicekey'
