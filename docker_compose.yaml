@@ -1,0 +1,13 @@
+services:
+  sonoff-bridge:
+    build: .
+    container_name: sonoff-bridge
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config:/config
+    environment:
+      - MQTT_BROKER=192.168.0.100
+      - MQTT_PORT=1883
+      # The app will look for the file here
+      - CONFIG_PATH=/config/config.yaml
