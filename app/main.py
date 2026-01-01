@@ -237,6 +237,19 @@ class MqttHandler:
             "device": device_info
         }
         self.client.publish(f"{disc}/sensor/sonoff_{d_id}_v/config", json.dumps(payload_v), retain=True)
+
+        # 4. Energy Config
+        payload_e = {
+            "name": f"{name} Energy",
+            "unique_id": f"sonoff_{d_id}_e",
+            "state_topic": f"{base}/{d_id}/state",
+            "unit_of_measurement": "kWh",
+            "device_class": "energy",
+            "state_class": "total_increasing",
+            "value_template": "{{ value_json.energy }}",
+            "device": device_info
+        }
+        self.client.publish(f"{disc}/sensor/sonoff_{d_id}_e/config", json.dumps(payload_e), retain=True)
         
         logger.info(f"Published Discovery for {name} to {disc}/...")
 
@@ -250,6 +263,10 @@ class MqttHandler:
              payload['power'] = float(data['power']) / 100.0
         if 'voltage' in data:
             payload['voltage'] = float(data['voltage']) / 100.0
+        if 'dayKwh' in data:
+            # User log shows "dayKwh": 12 for what is likely 0.12kWh (given power is 57.86W)
+            # Scaling by 100 seems consistent with other fields.
+            payload['energy'] = float(data['dayKwh']) / 100.0
             
         if payload:
             self.client.publish(f"{base}/{dev['id']}/state", json.dumps(payload))
