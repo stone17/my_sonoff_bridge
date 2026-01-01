@@ -49,12 +49,34 @@
                         required></div>
                 <div class="col-12 text-end"><button class="btn btn-success">Save</button></div>
             </form>
+            </form>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="modal fade" id="infoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="infoModalTitle">Device Info</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-sm">
+                            <tbody id="infoModalBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="row g-4 mb-5">
         {% for id, dev in devices.items() %}
-        <div class="col-md-6 col-lg-4 device-wrapper" data-id="{{ dev.id }}">
+        <div class="col-md-6 col-lg-4 device-wrapper" data-id="{{ dev.id }}" data-name="{{ dev.name }}"
+            data-ip="{{ dev.ip }}" data-key="{{ dev.key }}">
             <div class="card h-100 device-card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title">{{ dev.name }}</h5>
@@ -80,7 +102,9 @@
                             id="btn-off-{{dev.id}}">OFF</button>
                     </div>
                 </div>
-                <div class="card-footer bg-white border-0 text-end">
+                <div class="card-footer bg-white border-0 d-flex justify-content-between">
+                    <button class="btn btn-link btn-sm text-info text-decoration-none"
+                        onclick="showInfo('{{dev.id}}')">ℹ Info</button>
                     <form action="/delete/{{dev.id}}" method="post" class="d-inline">
                         <button class="btn btn-link btn-sm text-danger text-decoration-none">Remove</button>
                     </form>
@@ -119,7 +143,8 @@
                             <input type="text" name="mqtt_prefix" class="form-control"
                                 value="{{ settings.mqtt_prefix }}" placeholder="sonoff" required>
                             <div class="form-text">Root topic for device states (e.g.,
-                                <code>sonoff</code>/device_id/state)</div>
+                                <code>sonoff</code>/device_id/state)
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label>Auto-Discovery Prefix</label>
@@ -144,6 +169,46 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const infoModal = new bootstrap.Modal(document.getElementById('infoModal'));
+
+        async function showInfo(id) {
+            const card = document.querySelector(`.device-wrapper[data-id="${id}"]`);
+            const name = card.getAttribute('data-name');
+            const ip = card.getAttribute('data-ip');
+            const key = card.getAttribute('data-key');
+
+            document.getElementById('infoModalTitle').innerText = `Info: ${name}`;
+            const tbody = document.getElementById('infoModalBody');
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center">Loading...</td></tr>';
+
+            infoModal.show();
+
+            try {
+                const res = await fetch(`/status/${id}`);
+                const data = await res.json();
+
+                // Merge static info
+                const fullInfo = {
+                    "Name": name,
+                    "Device ID": id,
+                    "IP Address": ip,
+                    "Key": key,
+                    ...data
+                };
+
+                let html = '';
+                for (const [k, v] of Object.entries(fullInfo)) {
+                    let val = v;
+                    if (typeof v === 'object') val = JSON.stringify(v);
+                    html += `<tr><th scope="row" style="width: 30%">${k}</th><td class="text-break">${val}</td></tr>`;
+                }
+                tbody.innerHTML = html;
+
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="2" class="text-danger">Error loading info: ${e}</td></tr>`;
+            }
+        }
+
         async function control(id, state) {
             await fetch(`/control/${id}/${state}`, { method: 'POST' });
             updateStatus();
