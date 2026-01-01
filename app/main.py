@@ -264,8 +264,6 @@ class MqttHandler:
         if 'voltage' in data:
             payload['voltage'] = float(data['voltage']) / 100.0
         if 'dayKwh' in data:
-            # User log shows "dayKwh": 12 for what is likely 0.12kWh (given power is 57.86W)
-            # Scaling by 100 seems consistent with other fields.
             payload['energy'] = float(data['dayKwh']) / 100.0
             
         if payload:

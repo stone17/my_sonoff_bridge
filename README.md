@@ -6,12 +6,12 @@ It features a web dashboard for management, live energy monitoring, and **Home A
 
 ## 🚀 Features
 
-* **Web Dashboard:** Manage devices, view live energy stats (Watts/Volts), and toggle switches.
+* **Web Dashboard:** Manage devices, view live energy stats (Watts/Volts/kWh), view detailed device info, and toggle switches.
 * **MQTT Auto-Discovery:** Automatically creates devices in Domoticz or Home Assistant.
 * **Two-Way Sync:**
     * Control plugs via Web UI, Domoticz, or MQTT.
     * Status updates (local switching) are reflected in the UI and Domoticz.
-* **Energy Monitoring:** Reports Power (W) and Voltage (V).
+* **Energy Monitoring:** Reports Power (W), Voltage (V), and Energy (kWh).
 * **Local Control:** Uses direct HTTP (port 8081) and mDNS (Zeroconf), **no cloud required**.
 * **Dockerized:** Easy deployment with Docker Compose.
 
@@ -82,6 +82,7 @@ To get the devices into Domoticz automatically:
     * `[Name] Switch`
     * `[Name] Power`
     * `[Name] Voltage`
+    * `[Name] Energy`
 
 ## 📡 MQTT Topics
 
@@ -90,7 +91,7 @@ You can also interact directly via MQTT:
 | Action | Topic | Payload |
 | :--- | :--- | :--- |
 | **Switch ON/OFF** | `sonoff/{device_id}/set` | `ON` or `OFF` |
-| **Get State** | `sonoff/{device_id}/state` | `{"switch": "ON", "power": 12.5, "voltage": 230}` |
+| **Get State** | `sonoff/{device_id}/state` | `{"switch": "ON", "power": 12.5, "voltage": 230, "energy": 0.12}` |
 
 ## 🐛 Troubleshooting
 
