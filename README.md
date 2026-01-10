@@ -43,11 +43,11 @@ It features a web dashboard for management, live energy monitoring, and **Home A
 2.  Run the server:
     ```bash
     # Linux/Mac
-    export CONFIG_PATH="app/config.yaml"
+    export CONFIG_PATH="config/config.yaml"
     uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
     # Windows (PowerShell)
-    $env:CONFIG_PATH="app/config.yaml"
+    $env:CONFIG_PATH="config/config.yaml"
     uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ```
 
