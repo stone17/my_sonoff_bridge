@@ -26,7 +26,6 @@ import aiohttp
 CONFIG_FILE = os.getenv("CONFIG_PATH", "app/config.yaml")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger("SonoffBridge")
-# Suppress noisy zeroconf logs
 logging.getLogger("zeroconf").setLevel(logging.WARNING)
 
 # --- GLOBAL STATE ---
@@ -133,8 +132,6 @@ async def send_sonoff_command(dev, params):
     try:
         encrypted = encrypt(payload, dev['key'])
         url = f"http://{dev['ip']}:8081/zeroconf/switches"
-        
-        # Connection: close is crucial for some firmware versions to release the socket
         headers = {"Connection": "close"}
         
         async with http_session.post(url, json=encrypted, headers=headers, timeout=5) as r:
@@ -169,7 +166,6 @@ class MqttHandler:
             base = cfg.data.get("mqtt_prefix", "sonoff")
             logger.info(f"MQTT Connected. Listening on {base}/+/set")
             client.subscribe(f"{base}/+/set")
-            # Publish discovery on connect
             for d_id, dev in cfg.get_devices().items():
                 self.publish_discovery(dev)
 
@@ -190,7 +186,6 @@ class MqttHandler:
         if dev:
             params = {"switches": [{"outlet": 0, "switch": state}], "operSide": 1}
             await send_sonoff_command(dev, params)
-            # We do NOT poll here. We wait for the device to broadcast the change via mDNS.
 
     def publish_discovery(self, dev):
         d_id = dev['id']
@@ -200,7 +195,6 @@ class MqttHandler:
 
         device_info = {"identifiers": [d_id], "name": name, "manufacturer": "Sonoff", "model": "S60TPF"}
 
-        # Switch
         payload_sw = {
             "name": f"{name} Switch", "unique_id": f"sonoff_{d_id}_sw",
             "command_topic": f"{base}/{d_id}/set", "state_topic": f"{base}/{d_id}/state",
@@ -208,7 +202,6 @@ class MqttHandler:
         }
         self.client.publish(f"{disc}/switch/sonoff_{d_id}/config", json.dumps(payload_sw), retain=True)
 
-        # Power
         payload_p = {
             "name": f"{name} Power", "unique_id": f"sonoff_{d_id}_p",
             "state_topic": f"{base}/{d_id}/state", "unit_of_measurement": "W",
@@ -216,7 +209,6 @@ class MqttHandler:
         }
         self.client.publish(f"{disc}/sensor/sonoff_{d_id}_p/config", json.dumps(payload_p), retain=True)
 
-        # Voltage
         payload_v = {
             "name": f"{name} Voltage", "unique_id": f"sonoff_{d_id}_v",
             "state_topic": f"{base}/{d_id}/state", "unit_of_measurement": "V",
@@ -240,17 +232,18 @@ class MqttHandler:
         
         if payload:
             self.client.publish(f"{base}/{dev['id']}/state", json.dumps(payload))
-            logger.info(f"State Update {dev['name']}: {payload}")
+            logger.info(f"Update {dev['name']}: {payload}")
 
 mqtt_handler = MqttHandler()
 
 # --- DATA PROCESSING ---
 def process_data(dev, data):
-    # Update local state
+    # INJECT TIMESTAMP
+    data['last_seen'] = time.strftime("%H:%M:%S")
+    
     if dev['id'] not in device_states: device_states[dev['id']] = {}
     device_states[dev['id']].update(data)
     
-    # Push to MQTT
     mqtt_handler.publish_state(dev, data)
 
 # --- ZEROCONF LISTENER ---
@@ -274,14 +267,9 @@ class SonoffListener:
 async def lifespan(app: FastAPI):
     global loop, http_session
     loop = asyncio.get_running_loop()
-    
-    # 1. Start HTTP Session (Used only for Control actions)
     http_session = aiohttp.ClientSession()
-    
-    # 2. Start MQTT
     mqtt_handler.start()
     
-    # 3. Start Listener (The only source of data now)
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -296,11 +284,9 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    # Shutdown
     mqtt_handler.stop()
     zc.close()
-    if http_session:
-        await http_session.close()
+    if http_session: await http_session.close()
 
 app = FastAPI(lifespan=lifespan)
 templates = Jinja2Templates(directory="app/templates")
@@ -326,7 +312,6 @@ async def save_settings(
     for d_id, dev in devices.items():
         mqtt_handler.remove_discovery(dev, forced_prefix=old_disc_prefix)
 
-    # Note: Poll interval argument removed
     cfg.update_settings(mqtt_broker, mqtt_port, mqtt_prefix, discovery_prefix)
     
     mqtt_handler.stop()
@@ -348,6 +333,5 @@ async def control(device_id: str, state: str):
     dev = cfg.get_device(device_id)
     if not dev: return {"error": "Unknown device"}
     params = {"switches": [{"outlet": 0, "switch": state}], "operSide": 1}
-    # Send command only, don't poll
     res = await send_sonoff_command(dev, params)
     return res or {"error": "Failed"}

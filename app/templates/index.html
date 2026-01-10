@@ -28,7 +28,6 @@
             z-index: 9999;
         }
 
-        /* Style for the raw json block */
         pre.raw-data {
             background: #f8f9fa;
             border: 1px solid #e9ecef;
@@ -50,12 +49,9 @@
         <h3>⚡ Sonoff Bridge</h3>
         <div>
             <button class="btn btn-primary me-2" type="button" data-bs-toggle="collapse"
-                data-bs-target="#addDeviceForm">
-                + Add Device
-            </button>
-            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#settingsModal">
-                ⚙️ Settings
-            </button>
+                data-bs-target="#addDeviceForm">+ Add Device</button>
+            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#settingsModal">⚙️
+                Settings</button>
         </div>
     </div>
 
@@ -80,18 +76,19 @@
         <div class="col-md-6 col-lg-4 device-wrapper" data-id="{{ dev.id }}">
             <div class="card h-100 device-card shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="m-0 text-truncate" title="{{ dev.name }}">{{ dev.name }}</h5>
-                    <div>
+                    <div class="text-truncate me-2">
+                        <h5 class="m-0" title="{{ dev.name }}">{{ dev.name }}</h5>
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            Last seen: <span id="t-{{dev.id}}">--:--:--</span>
+                        </small>
+                    </div>
+                    <div style="min-width: 65px; text-align: right;">
                         <button class="btn btn-sm btn-outline-secondary rounded-circle me-1" type="button"
                             data-bs-toggle="collapse" data-bs-target="#info-{{dev.id}}"
-                            style="width: 30px; height: 30px; padding: 0;">
-                            i
-                        </button>
+                            style="width: 30px; height: 30px; padding: 0;">i</button>
                         <button class="btn btn-sm btn-outline-dark rounded-circle" type="button"
                             data-bs-toggle="collapse" data-bs-target="#raw-{{dev.id}}"
-                            style="width: 30px; height: 30px; padding: 0; font-family: monospace;">
-                            {}
-                        </button>
+                            style="width: 30px; height: 30px; padding: 0; font-family: monospace;">{}</button>
                     </div>
                 </div>
 
@@ -102,7 +99,6 @@
                         <div class="text-truncate"><strong>Key:</strong> {{ dev.key }}</div>
                     </div>
                 </div>
-
                 <div class="collapse bg-white border-bottom" id="raw-{{dev.id}}">
                     <div class="p-2">
                         <pre class="raw-data" id="json-{{dev.id}}">Waiting for data...</pre>
@@ -129,7 +125,7 @@
                 </div>
                 <div class="card-footer bg-white border-0 text-end">
                     <form action="/delete/{{dev.id}}" method="post" class="d-inline"
-                        onsubmit="return confirm('Remove this device?');">
+                        onsubmit="return confirm('Remove?');">
                         <button class="btn btn-link btn-sm text-danger text-decoration-none">Remove</button>
                     </form>
                 </div>
@@ -143,33 +139,21 @@
             <div class="modal-content">
                 <form action="/settings" method="post">
                     <div class="modal-header">
-                        <h5 class="modal-title">Configuration</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title">Configuration</h5><button type="button" class="btn-close"
+                            data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <h6 class="text-muted mb-3">MQTT Connection</h6>
-                        <div class="mb-3">
-                            <label>Broker IP</label>
-                            <input type="text" name="mqtt_broker" class="form-control"
-                                value="{{ settings.mqtt_broker }}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>Port</label>
-                            <input type="number" name="mqtt_port" class="form-control" value="{{ settings.mqtt_port }}"
-                                required>
-                        </div>
+                        <div class="mb-3"><label>Broker IP</label><input type="text" name="mqtt_broker"
+                                class="form-control" value="{{ settings.mqtt_broker }}" required></div>
+                        <div class="mb-3"><label>Port</label><input type="number" name="mqtt_port" class="form-control"
+                                value="{{ settings.mqtt_port }}" required></div>
                         <hr>
                         <h6 class="text-muted mb-3">Topics & Discovery</h6>
-                        <div class="mb-3">
-                            <label>Base Topic</label>
-                            <input type="text" name="mqtt_prefix" class="form-control"
-                                value="{{ settings.mqtt_prefix }}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>Auto-Discovery Prefix</label>
-                            <input type="text" name="discovery_prefix" class="form-control"
-                                value="{{ settings.discovery_prefix }}" required>
-                        </div>
+                        <div class="mb-3"><label>Base Topic</label><input type="text" name="mqtt_prefix"
+                                class="form-control" value="{{ settings.mqtt_prefix }}" required></div>
+                        <div class="mb-3"><label>Auto-Discovery Prefix</label><input type="text" name="discovery_prefix"
+                                class="form-control" value="{{ settings.discovery_prefix }}" required></div>
                     </div>
                     <div class="modal-footer"><button class="btn btn-primary">Save Settings</button></div>
                 </form>
@@ -181,12 +165,9 @@
     <script>
         function showStatus(msg, type = 'info') {
             const el = document.getElementById('status-area');
-            el.innerText = msg;
-            el.className = `alert alert-${type} status-toast shadow`;
-            el.classList.remove('d-none');
+            el.innerText = msg; el.className = `alert alert-${type} status-toast shadow`; el.classList.remove('d-none');
             setTimeout(() => el.classList.add('d-none'), 3000);
         }
-
         async function control(id, state) {
             showStatus(`Sending ${state.toUpperCase()}...`);
             try {
@@ -194,11 +175,8 @@
                 const data = await res.json();
                 if (data.error) showStatus('Error: ' + data.error, 'danger');
                 else showStatus('Command Sent', 'success');
-            } catch (e) {
-                showStatus('Network Error', 'danger');
-            }
+            } catch (e) { showStatus('Network Error', 'danger'); }
         }
-
         async function updateStatus() {
             const cards = document.querySelectorAll('.device-wrapper');
             cards.forEach(async (card) => {
@@ -207,38 +185,27 @@
                     const res = await fetch(`/status/${id}`);
                     const data = await res.json();
 
-                    // 1. Update Values
+                    if (data.last_seen) document.getElementById(`t-${id}`).innerText = data.last_seen;
                     if (data.power !== undefined) document.getElementById(`p-${id}`).innerText = (data.power / 100).toFixed(1);
                     if (data.voltage !== undefined) document.getElementById(`v-${id}`).innerText = (data.voltage / 100).toFixed(0);
 
-                    // 2. Update Raw JSON View (The whole last message)
                     const jsonEl = document.getElementById(`json-${id}`);
-                    if (jsonEl && Object.keys(data).length > 0) {
-                        jsonEl.innerText = JSON.stringify(data, null, 2);
-                    }
+                    if (jsonEl && Object.keys(data).length > 0) jsonEl.innerText = JSON.stringify(data, null, 2);
 
-                    // 3. Update Buttons
                     if (data.switches) {
                         const state = data.switches[0].switch;
                         const btnOn = document.getElementById(`btn-on-${id}`);
                         const btnOff = document.getElementById(`btn-off-${id}`);
-
                         if (state === 'on') {
-                            if (!btnOn.classList.contains('btn-success')) {
-                                btnOn.className = 'btn btn-success w-45';
-                                btnOff.className = 'btn btn-outline-danger w-45';
-                            }
+                            if (!btnOn.classList.contains('btn-success')) { btnOn.className = 'btn btn-success w-45'; btnOff.className = 'btn btn-outline-danger w-45'; }
                         } else {
-                            if (!btnOff.classList.contains('btn-danger')) {
-                                btnOn.className = 'btn btn-outline-success w-45';
-                                btnOff.className = 'btn btn-danger w-45';
-                            }
+                            if (!btnOff.classList.contains('btn-danger')) { btnOn.className = 'btn btn-outline-success w-45'; btnOff.className = 'btn btn-danger w-45'; }
                         }
                     }
                 } catch (e) { }
             });
         }
-        setInterval(updateStatus, 2000); // UI poll only
+        setInterval(updateStatus, 2000);
         updateStatus();
     </script>
 </body>
