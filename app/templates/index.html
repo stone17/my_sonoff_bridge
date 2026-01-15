@@ -148,6 +148,12 @@
                                 class="form-control" value="{{ settings.mqtt_broker }}" required></div>
                         <div class="mb-3"><label>Port</label><input type="number" name="mqtt_port" class="form-control"
                                 value="{{ settings.mqtt_port }}" required></div>
+                        
+                        <div class="mb-3"><label>Username</label><input type="text" name="mqtt_user"
+                                class="form-control" value="{{ settings.mqtt_user or '' }}"></div>
+                        <div class="mb-3"><label>Password</label><input type="password" name="mqtt_password"
+                                class="form-control" value="{{ settings.mqtt_password or '' }}"></div>
+                        
                         <hr>
                         <h6 class="text-muted mb-3">Topics & Discovery</h6>
                         <div class="mb-3"><label>Base Topic</label><input type="text" name="mqtt_prefix"

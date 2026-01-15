@@ -39,6 +39,8 @@ class ConfigManager:
         self.data = {
             "mqtt_broker": "192.168.0.100",
             "mqtt_port": 1883,
+            "mqtt_user": "",       # <--- Add
+            "mqtt_password": "",   # <--- Add
             "mqtt_prefix": "sonoff",
             "discovery_prefix": "homeassistant",
             "devices": {}
@@ -78,9 +80,11 @@ class ConfigManager:
             del self.data["devices"][d_id]
             self.save()
 
-    def update_settings(self, broker, port, prefix, disc_prefix):
+    def update_settings(self, broker, port, user, password, prefix, disc_prefix):
         self.data["mqtt_broker"] = broker
         self.data["mqtt_port"] = int(port)
+        self.data["mqtt_user"] = user          # <--- Add
+        self.data["mqtt_password"] = password  # <--- Add
         self.data["mqtt_prefix"] = prefix
         self.data["discovery_prefix"] = disc_prefix
         self.save()
@@ -151,6 +155,14 @@ class MqttHandler:
         try:
             broker = cfg.data['mqtt_broker']
             port = cfg.data['mqtt_port']
+            
+            # <--- Add this block --->
+            user = cfg.data.get('mqtt_user')
+            passwd = cfg.data.get('mqtt_password')
+            if user and passwd:
+                self.client.username_pw_set(user, passwd)
+            # <---------------------->
+
             logger.info(f"Connecting to MQTT {broker}:{port}")
             self.client.connect(broker, port, 60)
             self.client.loop_start()
@@ -304,15 +316,20 @@ async def get_status(device_id: str):
 
 @app.post("/settings")
 async def save_settings(
-    mqtt_broker: str = Form(...), mqtt_port: int = Form(...),
-    mqtt_prefix: str = Form(...), discovery_prefix: str = Form(...)
+    mqtt_broker: str = Form(...), 
+    mqtt_port: int = Form(...),
+    mqtt_user: str = Form(""),      # <--- Add
+    mqtt_password: str = Form(""),  # <--- Add
+    mqtt_prefix: str = Form(...), 
+    discovery_prefix: str = Form(...)
 ):
     old_disc_prefix = cfg.data.get("discovery_prefix", "homeassistant")
     devices = cfg.get_devices()
     for d_id, dev in devices.items():
         mqtt_handler.remove_discovery(dev, forced_prefix=old_disc_prefix)
 
-    cfg.update_settings(mqtt_broker, mqtt_port, mqtt_prefix, discovery_prefix)
+    # Pass new args
+    cfg.update_settings(mqtt_broker, mqtt_port, mqtt_user, mqtt_password, mqtt_prefix, discovery_prefix)
     
     mqtt_handler.stop()
     mqtt_handler.start()
